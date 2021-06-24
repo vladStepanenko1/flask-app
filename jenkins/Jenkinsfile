@@ -1,0 +1,16 @@
+pipeline{
+    agent any
+    stages{
+        stage('Test'){
+            agent{
+                docker{
+                    image 'python:alpine'
+                }
+            }
+            steps{
+                git 'https://github.com/vladStepanenko1/flask-app.git/'
+                sh 'python tests.py'
+            }
+        }
+    }
+}
