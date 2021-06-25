@@ -1,15 +1,35 @@
 pipeline{
     agent any
     stages{
-        stage('Test'){
-            agent{
-                docker{
-                    image 'python:alpine'
+        stage('Checkout'){
+            steps{
+                git 'https://github.com/vladStepanenko1/flask-app.git'
+            }
+        }
+        stage('Build docker image'){
+            steps{
+                script{
+                    def imageName = "eu.gcr.io/avian-scanner-317608/flask-app:${env.BUILD_ID}"
+                    appImage = docker.build(imageName, '-f ./docker/Dockerfile .')
                 }
             }
+        }
+        stage('Test'){
             steps{
-                git 'https://github.com/vladStepanenko1/flask-app.git/'
-                sh 'python tests.py'
+                script{
+                    appImage.inside{
+                        sh 'python tests.py'
+                    }
+                }
+            }
+        }
+        stage('Push docker image'){
+            steps{
+                script{
+                    docker.withRegistry('https://eu.gcr.io', 'gcr:My First Project'){
+                        appImage.push()
+                    }
+                }
             }
         }
     }
