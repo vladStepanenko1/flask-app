@@ -16,7 +16,6 @@ pipeline{
         stage('Build docker image'){
             steps{
                 script{
-                    //def imageName = "eu.gcr.io/avian-scanner-317608/flask-app:${env.BUILD_ID}"
                     appImage = docker.build(LOCAL_TAG, '-f ./docker/Dockerfile .')
                 }
             }
@@ -51,7 +50,7 @@ pipeline{
                     sh 'gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=${GCP_KEY} --project=$GCLOUD_PROJECT'
                     sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker stop --name $CONTAINER_NAME"'
                     sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker rm --name $CONTAINER_NAME"'
-                    sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker run --name $CONTAINER_NAME -d -p 5000:5000 $REMOTE_TAG"'
+                    sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker run --name $CONTAINER_NAME -d -p 5001:5000 $REMOTE_TAG"'
                 }
             }
         }
