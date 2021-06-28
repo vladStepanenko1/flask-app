@@ -1,10 +1,10 @@
 pipeline{
     agent any
     environment{
+        PROJECT_ID = 'flask-app-318214'
         LOCAL_TAG = "flask-app:${env.BUILD_NUMBER}"
-        //REMOTE_TAG = "eu.gcr.io/avian-scanner-317608/$LOCAL_TAG"
+        REMOTE_TAG = "eu.gcr.io/$PROJECT_ID/$LOCAL_TAG"
         //SERVICE_ACCOUNT_EMAIL = 'jenkins@avian-scanner-317608.iam.gserviceaccount.com'
-        //GCLOUD_PROJECT = 'avian-scanner-317608'
         CONTAINER_NAME = 'flask-app'
     }
     stages{
@@ -29,16 +29,25 @@ pipeline{
                 }
             }
         }
-        // stage('Push docker image'){
-        //     steps{
-        //         script{
-        //             docker.withRegistry('https://eu.gcr.io', 'gcr:flask-app'){
-        //                 sh "docker tag $LOCAL_TAG $REMOTE_TAG"
-        //                 sh "docker push $REMOTE_TAG"
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Push docker image'){
+            agent{
+                docker{
+                    image 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+                }
+            }
+            steps{
+                script{
+                    withCredentials([file(credentialsId: 'flask-app-key', variable: 'GC_KEY')]){
+                        sh 'cat $GC_KEY | docker login -u _json_key --password-stdin https://eu.gcr.io'
+                        sh 'gcloud auth activate-service-account --key-file=$GC_KEY'
+                        sh 'gcloud auth configure-docker'
+                        echo 'Pushing $LOCAL_TAG image to container registry'
+                        sh 'docker tag $LOCAL_TAG $REMOTE_TAG'
+                        sh 'docker push $REMOTE_TAG'
+                    }
+                }
+            }
+        }
         // stage('Deploy'){
         //     agent{
         //         docker {
