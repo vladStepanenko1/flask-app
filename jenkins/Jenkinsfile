@@ -5,6 +5,9 @@ pipeline{
         LOCAL_TAG = "flask-app:${env.BUILD_NUMBER}"
         REMOTE_TAG = "eu.gcr.io/$PROJECT_ID/$LOCAL_TAG"
         CONTAINER_NAME = 'flask-app'
+        GC_SDK_IMAGE = 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+        VM_NAME = 'flask-app-vm'
+        VM_ZONE = 'europe-west3-a'
     }
     stages{
         stage('Checkout'){
@@ -31,36 +34,46 @@ pipeline{
         stage('Push docker image'){
             agent{
                 docker{
-                    image 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+                    image '$GC_SDK_IMAGE'
                 }
             }
             steps{
-                script{
-                    withCredentials([file(credentialsId: 'flask-app-key', variable: 'GC_KEY')]){
-                        sh 'cat $GC_KEY | docker login -u _json_key --password-stdin https://eu.gcr.io'
-                        sh 'gcloud auth activate-service-account --key-file=$GC_KEY'
-                        sh 'gcloud auth configure-docker'
-                        echo 'Pushing $LOCAL_TAG image to container registry'
-                        sh 'docker tag $LOCAL_TAG $REMOTE_TAG'
-                        sh 'docker push $REMOTE_TAG'
-                    }
+                withCredentials([file(credentialsId: 'flask-app-key', variable: 'GC_KEY')]){
+                    sh 'cat $GC_KEY | docker login -u _json_key --password-stdin https://eu.gcr.io'
+                    sh 'gcloud auth activate-service-account --key-file=$GC_KEY'
+                    sh 'gcloud auth configure-docker'
+                    echo 'Pushing $LOCAL_TAG image to container registry'
+                    sh 'docker tag $LOCAL_TAG $REMOTE_TAG'
+                    sh 'docker push $REMOTE_TAG'
                 }
             }
         }
-        // stage('Deploy'){
-        //     agent{
-        //         docker {
-        //             image 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
-        //         }
-        //     }
-        //     steps{
-        //         withCredentials([file(credentialsId: 'gcp-key', variable: 'GCP_KEY')]){
-        //             sh 'gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=${GCP_KEY} --project=$GCLOUD_PROJECT'
-        //             sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker stop --name $CONTAINER_NAME"'
-        //             sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker rm --name $CONTAINER_NAME"'
-        //             sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker run --name $CONTAINER_NAME -d -p 5001:5000 $REMOTE_TAG"'
-        //         }
-        //     }
-        // }
+        stage('Deploy'){
+            agent{
+                docker{
+                    image '$GC_SDK_IMAGE'
+                }
+            }
+            steps{
+                withCredentials([file(credentialsId: 'flask-app-key', variable: 'GC_KEY')]){
+                    sh 'gcloud compute ssh $VM_NAME \
+                            --zone=$VM_ZONE \
+                            --project $PROJECT_ID \
+                            --command="docker-credential-gcr configure-docker"'
+                    sh 'gcloud compute ssh $VM_NAME \
+                            --zone=$VM_ZONE \
+                            --project $PROJECT_ID \
+                            --command="docker pull $REMOTE_TAG"'
+                    sh '''gcloud compute ssh $VM_NAME \
+                            --zone=$VM_ZONE  \
+                            --project $PROJECT_ID \
+                            --command="docker container stop $CONTAINER_NAME && docker container rm $CONTAINER_NAME || exit 0;"'''
+                    sh '''gcloud compute ssh $VM_NAME \
+                            --zone=$VM_ZONE \
+                            --project $PROJECT_ID \
+                            --command="docker run --name=$CONTAINER_NAME --restart=unless-stopped -d -p 80:5000 $REMOTE_TAG"'''
+                }
+            }
+        }
     }
 }
