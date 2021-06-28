@@ -1,3 +1,6 @@
 .gitignore
-tf/*key.json
-tf/.terraform*
+/tf/.terraform/*
+/tf/.terraform.lock.hcl
+/tf/terraform.tfstate
+/tf/terraform.tfstate.backup
+/tf/terraform-sa-key.json
