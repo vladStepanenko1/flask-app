@@ -2,9 +2,9 @@ pipeline{
     agent any
     environment{
         LOCAL_TAG = "flask-app:${env.BUILD_NUMBER}"
-        REMOTE_TAG = "eu.gcr.io/avian-scanner-317608/$LOCAL_TAG"
-        SERVICE_ACCOUNT_EMAIL = 'jenkins@avian-scanner-317608.iam.gserviceaccount.com'
-        GCLOUD_PROJECT = 'avian-scanner-317608'
+        //REMOTE_TAG = "eu.gcr.io/avian-scanner-317608/$LOCAL_TAG"
+        //SERVICE_ACCOUNT_EMAIL = 'jenkins@avian-scanner-317608.iam.gserviceaccount.com'
+        //GCLOUD_PROJECT = 'avian-scanner-317608'
         CONTAINER_NAME = 'flask-app'
     }
     stages{
@@ -29,30 +29,30 @@ pipeline{
                 }
             }
         }
-        stage('Push docker image'){
-            steps{
-                script{
-                    docker.withRegistry('https://eu.gcr.io', 'gcr:My First Project'){
-                        sh "docker tag $LOCAL_TAG $REMOTE_TAG"
-                        sh "docker push $REMOTE_TAG"
-                    }
-                }
-            }
-        }
-        stage('Deploy'){
-            agent{
-                docker {
-                    image 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
-                }
-            }
-            steps{
-                withCredentials([file(credentialsId: 'gcp-key', variable: 'GCP_KEY')]){
-                    sh 'gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=${GCP_KEY} --project=$GCLOUD_PROJECT'
-                    sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker stop --name $CONTAINER_NAME"'
-                    sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker rm --name $CONTAINER_NAME"'
-                    sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker run --name $CONTAINER_NAME -d -p 5001:5000 $REMOTE_TAG"'
-                }
-            }
-        }
+        // stage('Push docker image'){
+        //     steps{
+        //         script{
+        //             docker.withRegistry('https://eu.gcr.io', 'gcr:flask-app'){
+        //                 sh "docker tag $LOCAL_TAG $REMOTE_TAG"
+        //                 sh "docker push $REMOTE_TAG"
+        //             }
+        //         }
+        //     }
+        // }
+        // stage('Deploy'){
+        //     agent{
+        //         docker {
+        //             image 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+        //         }
+        //     }
+        //     steps{
+        //         withCredentials([file(credentialsId: 'gcp-key', variable: 'GCP_KEY')]){
+        //             sh 'gcloud auth activate-service-account $SERVICE_ACCOUNT_EMAIL --key-file=${GCP_KEY} --project=$GCLOUD_PROJECT'
+        //             sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker stop --name $CONTAINER_NAME"'
+        //             sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker rm --name $CONTAINER_NAME"'
+        //             sh 'gcloud compute ssh --project=$GCLOUD_PROJECT --zone=europe-west3-a vladstepanenko1@example-vm --command="docker run --name $CONTAINER_NAME -d -p 5001:5000 $REMOTE_TAG"'
+        //         }
+        //     }
+        // }
     }
 }
