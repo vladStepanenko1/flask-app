@@ -4,7 +4,6 @@ pipeline{
         PROJECT_ID = 'flask-app-318214'
         LOCAL_TAG = "flask-app:${env.BUILD_NUMBER}"
         REMOTE_TAG = "eu.gcr.io/$PROJECT_ID/$LOCAL_TAG"
-        //SERVICE_ACCOUNT_EMAIL = 'jenkins@avian-scanner-317608.iam.gserviceaccount.com'
         CONTAINER_NAME = 'flask-app'
     }
     stages{
