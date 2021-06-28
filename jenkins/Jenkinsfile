@@ -56,14 +56,15 @@ pipeline{
             }
             steps{
                 withCredentials([file(credentialsId: 'flask-app-key', variable: 'GC_KEY')]){
-                    sh 'gcloud compute ssh $VM_NAME \
+                    sh 'gcloud auth activate-service-account --key-file=$GC_KEY'
+                    sh '''gcloud compute ssh $VM_NAME \
                             --zone=$VM_ZONE \
                             --project $PROJECT_ID \
-                            --command="docker-credential-gcr configure-docker"'
-                    sh 'gcloud compute ssh $VM_NAME \
+                            --command="docker-credential-gcr configure-docker"'''
+                    sh '''gcloud compute ssh $VM_NAME \
                             --zone=$VM_ZONE \
                             --project $PROJECT_ID \
-                            --command="docker pull $REMOTE_TAG"'
+                            --command="docker pull $REMOTE_TAG"'''
                     sh '''gcloud compute ssh $VM_NAME \
                             --zone=$VM_ZONE  \
                             --project $PROJECT_ID \
